@@ -25,6 +25,13 @@
                     <comment>Enter your Facebook Page Access Token with pages_manage_posts and pages_read_engagement permissions</comment>
                     <validate>required-entry</validate>
                 </field>
+                <field id="fb_post_image" translate="label" type="image" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Facebook Post Image</label>
+                    <backend_model>Atma\FacebookSync\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="system/filesystem/media" scope_info="1">atma/facebook_sync</upload_dir>
+                    <base_url type="media" scope_info="1">atma/facebook_sync</base_url>
+                    <comment>Upload an image to use for all Facebook posts. Allowed file types: jpg, jpeg, gif, png, webp. If not set, product images will be used.</comment>
+                </field>
             </group>
         </section>
     </system>

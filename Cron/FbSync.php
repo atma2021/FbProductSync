@@ -117,15 +117,15 @@ class FbSync
                 $postedSkus[] = $item->getSku();
             }
 
-            // Get today's date range (from midnight to now)
-            $todayStart = date('Y-m-d 00:00:00');
-            $todayEnd = date('Y-m-d 23:59:59');
+            // Get yesterday's date range (from midnight to 23:59:59)
+            $yesterdayStart = date('Y-m-d 00:00:00', strtotime('-1 day'));
+            $yesterdayEnd = date('Y-m-d 23:59:59', strtotime('-1 day'));
 
             $collection = $this->productCollectionFactory->create();
             $collection->addAttributeToSelect(['name', 'sku', 'image', 'short_description', 'price', 'type_id'])
                 ->addAttributeToFilter('status', Status::STATUS_ENABLED)
                 ->addAttributeToFilter('visibility', ['neq' => Visibility::VISIBILITY_NOT_VISIBLE])
-                ->addAttributeToFilter('created_at', ['from' => $todayStart, 'to' => $todayEnd]);
+                ->addAttributeToFilter('created_at', ['from' => $yesterdayStart, 'to' => $yesterdayEnd]);
 
             // Exclude already posted products
             if (!empty($postedSkus)) {
@@ -135,8 +135,10 @@ class FbSync
             $collection->setOrder('created_at', 'DESC');
 
             $products = [];
+            // Get configured image URL
+            $imageUrl = $this->configuration->getFbPostImageUrl();
+            
             foreach ($collection as $product) {
-                $imageUrl = $this->getImageUrl($product);
 
                 // Create Facebook Product entry
                 $fbProduct = $this->fbProductsRepository->create([
@@ -172,40 +174,6 @@ class FbSync
         }
     }
 
-    /**
-     * Get product image URL
-     *
-     * @param \Magento\Catalog\Model\Product $product
-     * @return string
-     */
-    protected function getImageUrl($product)
-    {
-        try {
-            // TEMPORARY: Use hardcoded URL for testing
-//            return 'https://servusimobiliare.ro/media/mf_webp/png/media/catalog/product/cache/a1a7ca4652235e5d691fe22930aeb2c1/i/m/image1-2_sell_11097.webp';
-
-            $imageUrl = $product->getImage();
-            if ($imageUrl && $imageUrl !== 'no_selection') {
-                // Get base URL
-                $baseUrl = $this->scopeConfig->getValue(
-                    'web/secure/base_url',
-                    ScopeInterface::SCOPE_STORE
-                );
-
-                // Ensure base URL ends with /
-                $baseUrl = rtrim($baseUrl, '/') . '/';
-
-                // Build full image URL
-                $fullImageUrl = $baseUrl . 'pub/media/catalog/product' . $imageUrl;
-
-                return $fullImageUrl;
-            }
-            return '';
-        } catch (Exception $e) {
-            $this->logger->error('Error getting product image URL: ' . $e->getMessage());
-            return '';
-        }
-    }
 
     /**
      * Post product to Facebook
@@ -236,10 +204,12 @@ class FbSync
             // Post with photo using /photos endpoint
             $url = "https://graph.facebook.com/v24.0/{$pageId}/photos";
 
-            $message = "🆕 {$product['name']} 🏠\n\n";
+            $message = "🏠 {$product['name']}\n\n";
             $message .= $product['description'] . "\n\n";
+            $message .= "━━━━━━━━━━━━━━━━━━━\n";
             $message .= "💶 " . __("Price:") . " " . number_format($product['price'], 2) . " EUR\n";
-            $message .= "🔗 " . __("Details") . " " . $product['url'];
+            $message .= "🔗 " . __("Details") . " " . $product['url'] . "\n";
+            $message .= "━━━━━━━━━━━━━━━━━━━";
 
             $params = [
                 'url' => $product['image_url'],
