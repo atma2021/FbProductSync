@@ -1,0 +1,52 @@
+{
+    "name": "atma/module-facebook-sync",
+    "description": "Automatically sync and post new Magento products to Facebook with images and descriptions",
+    "type": "magento2-module",
+    "version": "1.0.0",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Atma Development Team",
+            "email": "support@atma.ro",
+            "homepage": "https://atma.ro",
+            "role": "Developer"
+        }
+    ],
+    "keywords": [
+        "magento2",
+        "facebook",
+        "social media",
+        "sync",
+        "automation",
+        "product posting",
+        "facebook integration",
+        "real estate",
+        "cron"
+    ],
+    "require": {
+        "php": "^8.1",
+        "magento/framework": "^103.0",
+        "magento/module-backend": "^102.0",
+        "magento/module-catalog": "^104.0",
+        "magento/module-config": "^101.0",
+        "magento/module-cron": "^100.4",
+        "magento/module-store": "^101.0"
+    },
+    "suggest": {
+        "magento/module-logging": "For enhanced audit trail of Facebook sync operations"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Atma\\FacebookSync\\": ""
+        }
+    },
+    "support": {
+        "email": "support@atma.ro",
+        "issues": "https://atma.ro/support"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="atma_fb_products" resource="default" engine="innodb" comment="Facebook Posted Products">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" padding="10" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" length="64" name="sku" nullable="false" comment="Product SKU"/>
+        <column xsi:type="varchar" length="255" name="product_name" nullable="false" comment="Product Name"/>
+        <column xsi:type="varchar" length="32" name="product_type" nullable="false" comment="Product Type"/>
+        <column xsi:type="varchar" length="255" name="facebook_post_id" comment="Facebook Post ID"/>
+        <column xsi:type="varchar" length="255" name="post_id" comment="Facebook Post ID (short)"/>
+        <column xsi:type="varchar" length="255" name="image_url" comment="Image URL"/>
+        <column xsi:type="varchar" length="32" name="status" nullable="false" default="pending" comment="Status (pending, published, failed)"/>
+        <column xsi:type="text" name="message" comment="Posted Message"/>
+        <column xsi:type="text" name="error_message" comment="Error Message if any"/>
+        <column xsi:type="datetime" name="scheduled_at" comment="Scheduled Post Time"/>
+        <column xsi:type="datetime" name="published_at" comment="Actual Publish Time"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
+        
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="FACEBOOK_POST_ID">
+            <column name="facebook_post_id"/>
+        </constraint>
+        <index referenceId="IDX_ATMA_FB_PRODUCTS_SKU" indexType="btree">
+            <column name="sku"/>
+        </index>
+        <index referenceId="IDX_ATMA_FB_PRODUCTS_STATUS" indexType="btree">
+            <column name="status"/>
+        </index>
+        <index referenceId="IDX_ATMA_FB_PRODUCTS_SCHEDULED_AT" indexType="btree">
+            <column name="scheduled_at"/>
+        </index>
+    </table>
+</schema>
