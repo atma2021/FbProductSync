@@ -133,7 +133,7 @@ class FbSync
             
             foreach ($collection as $product) {
                 // Get friendly product URL
-                $productUrl = $this->storeManager->getStore()->getBaseUrl() . $product->getUrlKey() . '.html';
+                $productUrl = $this->storeManager->getStore()->getBaseUrl() . $product->getUrlKey();
                 
                 // Get price from configured attribute
                 $priceValue = $product->getData($priceAttribute);
