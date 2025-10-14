@@ -2,13 +2,13 @@
     "name": "atma/module-facebook-sync",
     "description": "Automatically sync and post new Magento products to Facebook with images and descriptions",
     "type": "magento2-module",
-    "version": "1.0.0",
+    "version": "1.1.1",
     "license": "proprietary",
     "authors": [
         {
             "name": "Atma Development Team",
-            "email": "support@atma.ro",
-            "homepage": "https://atma.ro",
+            "email": "atma.business2020@gmail.com",
+            "homepage": "https://atma-development.com/",
             "role": "Developer"
         }
     ],
