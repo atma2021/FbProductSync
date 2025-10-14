@@ -30,7 +30,13 @@
                     <backend_model>Atma\FacebookSync\Model\Config\Backend\Image</backend_model>
                     <upload_dir config="system/filesystem/media" scope_info="1">atma/facebook_sync</upload_dir>
                     <base_url type="media" scope_info="1">atma/facebook_sync</base_url>
-                    <comment>Upload an image to use for all Facebook posts. Allowed file types: jpg, jpeg, gif, png, webp. If not set, product images will be used.</comment>
+                    <comment>Upload an image to use for all Facebook posts. Allowed file types: jpg, jpeg, gif, png, webp.</comment>
+                </field>
+                <field id="fb_price_attribute" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Price Attribute</label>
+                    <source_model>Atma\FacebookSync\Model\Config\Source\PriceAttribute</source_model>
+                    <comment>Select which price attribute to display in Facebook posts</comment>
+                    <validate>required-entry</validate>
                 </field>
             </group>
         </section>
