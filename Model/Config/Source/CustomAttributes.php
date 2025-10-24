@@ -57,9 +57,10 @@ class CustomAttributes implements ArrayInterface
                 continue;
             }
             
+            $label = $attribute->getFrontendLabel() ?: $attribute->getAttributeCode();
             $options[] = [
                 'value' => $attribute->getAttributeCode(),
-                'label' => $attribute->getFrontendLabel() ?: $attribute->getAttributeCode()
+                'label' => __($label)
             ];
         }
         

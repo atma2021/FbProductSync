@@ -35,7 +35,9 @@ class FbSync
         protected FbProductsRepository $fbProductsRepository,
         protected DateTime $dateTime,
         protected Configuration $configuration,
-        protected \Magento\Store\Model\StoreManagerInterface $storeManager
+        protected \Magento\Store\Model\StoreManagerInterface $storeManager,
+        protected \Magento\Eav\Model\Config $eavConfig,
+        protected \Magento\Framework\Pricing\Helper\Data $pricingHelper
     ) {}
 
     /**
@@ -308,6 +310,7 @@ class FbSync
      */
     protected function getAttributeLabel($attributeCode)
     {
+        // Predefined translatable labels for special attributes
         $labels = [
             'url' => __('Details'),
             'description' => __('Description'),
@@ -321,7 +324,26 @@ class FbSync
             'updated_at' => __('Updated')
         ];
         
-        return $labels[$attributeCode] ?? ucfirst(str_replace('_', ' ', $attributeCode));
+        // Return predefined label if exists
+        if (isset($labels[$attributeCode])) {
+            return $labels[$attributeCode];
+        }
+        
+        // Try to get the actual attribute label from Magento
+        try {
+            $attribute = $this->eavConfig->getAttribute('catalog_product', $attributeCode);
+            
+            if ($attribute && $attribute->getFrontendLabel()) {
+                return __($attribute->getFrontendLabel());
+            }
+        } catch (\Exception $e) {
+            // Log error but continue with fallback
+            $this->logger->debug('Could not get attribute label for: ' . $attributeCode . ' - ' . $e->getMessage());
+        }
+        
+        // Fallback: create translatable label from attribute code
+        $humanReadable = ucfirst(str_replace('_', ' ', $attributeCode));
+        return __($humanReadable);
     }
 
     /**
@@ -335,9 +357,10 @@ class FbSync
         $icons = [
             'url' => '🔗',
             'description' => '📝',
+            'name' => '📝',
             'short_description' => '📝',
-            'price' => '💶',
-            'final_price' => '💶',
+            'price' => '💰',
+            'final_price' => '💰',
             'special_price' => '💸',
             'sku' => '🏷️',
             'weight' => '⚖️',
@@ -345,7 +368,45 @@ class FbSync
             'updated_at' => '🔄'
         ];
         
+        // Check if it's a custom price attribute
+        if (!isset($icons[$attributeCode])) {
+            try {
+                $attribute = $this->eavConfig->getAttribute('catalog_product', $attributeCode);
+                if ($attribute && $attribute->getFrontendInput() === 'price') {
+                    return '💰';
+                }
+            } catch (\Exception $e) {
+                // Continue with default icon
+            }
+        }
+        
         return $icons[$attributeCode] ?? '📋';
+    }
+
+    /**
+     * Format price value with currency
+     *
+     * @param float $price
+     * @return string|null
+     */
+    protected function formatPrice($price)
+    {
+        if (!$price || $price <= 0) {
+            return null;
+        }
+        
+        try {
+            // Get current store currency
+            $store = $this->storeManager->getStore();
+            $currencyCode = $store->getCurrentCurrencyCode();
+            
+            // Format price with Magento's pricing helper
+            return $this->pricingHelper->currency($price, true, false);
+        } catch (\Exception $e) {
+            // Fallback to simple formatting
+            $this->logger->debug('Could not format price with currency: ' . $e->getMessage());
+            return number_format((float)$price, 2) . ' EUR';
+        }
     }
 
     /**
@@ -368,13 +429,11 @@ class FbSync
             case 'short_description':
                 return $product->getShortDescription();
             case 'price':
+                return $this->formatPrice($product->getPrice());
             case 'final_price':
+                return $this->formatPrice($product->getFinalPrice());
             case 'special_price':
-                $value = $product->getData($attributeCode);
-                if ($value) {
-                    return number_format((float)$value, 2) . ' EUR';
-                }
-                return null;
+                return $this->formatPrice($product->getSpecialPrice());
             case 'sku':
                 return $product->getSku();
             case 'weight':
@@ -394,6 +453,11 @@ class FbSync
                     $value = $product->getAttributeText($attributeCode);
                     if (!$value) {
                         $value = $product->getData($attributeCode);
+                    }
+                    
+                    // Format price-type custom attributes
+                    if ($attribute->getFrontendInput() === 'price' && $value) {
+                        return $this->formatPrice($value);
                     }
                     
                     // Format boolean values
