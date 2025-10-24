@@ -34,19 +34,20 @@ class AttributeLabelMapping extends Value
             }
             
             // Check format: attribute_name|custom_label
-            if (!preg_match('/^([a-zA-Z0-9_]+)\|(.+)$/', $line, $matches)) {
+            $parts = explode('|', $line, 2);
+            if (count($parts) !== 2) {
                 throw new ValidatorException(
                     __('Invalid format on line %1. Use format: "attribute_name|custom_label"', $lineNumber + 1)
                 );
             }
             
-            $attributeName = trim($matches[1]);
-            $customLabel = trim($matches[2]);
+            $attributeName = trim($parts[0]);
+            $customLabel = trim($parts[1]);
             
-            // Validate attribute name (alphanumeric and underscores only)
-            if (!preg_match('/^[a-zA-Z0-9_]+$/', $attributeName)) {
+            // Validate attribute name (allow letters, numbers, underscores, hyphens, and spaces)
+            if (!preg_match('/^[a-zA-Z0-9_\s-]+$/', $attributeName)) {
                 throw new ValidatorException(
-                    __('Invalid attribute name "%1" on line %2. Use only letters, numbers, and underscores.', 
+                    __('Invalid attribute name "%1" on line %2. Use only letters, numbers, underscores, hyphens, and spaces.', 
                        $attributeName, $lineNumber + 1)
                 );
             }
