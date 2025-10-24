@@ -13,12 +13,15 @@ This Magento 2 module automatically synchronizes your new products to your Faceb
 ## ✨ Features
 
 - 🔄 **Automatic Daily Sync** - Posts all new products created each day at 17:00
-- 📸 **Image Support** - Automatically posts product images to Facebook
+- 📸 **Image Support** - Configurable product images for Facebook posts
 - 🎯 **Smart Filtering** - Only posts enabled, visible products
 - 🚫 **No Duplicates** - Tracks posted products to avoid duplicate posts
 - 📊 **Status Tracking** - Monitors success/failure of each post with detailed logging
 - 🔐 **Secure Configuration** - Encrypted storage of Facebook access tokens
 - 📝 **Detailed Logging** - Complete audit trail in Magento system logs
+- 🎨 **Custom Attributes** - Select which product attributes to display in posts
+- 🏷️ **Smart Formatting** - Automatic formatting for prices, dates, and boolean values
+- 🎯 **Visual Icons** - Appropriate icons for different attribute types
 
 ---
 
@@ -103,6 +106,8 @@ php bin/magento cache:flush
    | **Enable FB Sync** | Enable/disable automatic posting | `Yes` |
    | **Facebook Page ID** | Your Facebook Page's numeric ID | `123456789012345` |
    | **Facebook Access Token** | Long-lived Page Access Token | `EAABsbCS1iHgBO...` |
+   | **Facebook Post Image** | Upload image for all Facebook posts | Upload JPG/PNG file |
+   | **Include Custom Attributes** | Select which product attributes to display | `Product URL, Description, Price` |
 
 4. Click **Save Config**
 5. Flush cache: `php bin/magento cache:flush`
@@ -135,10 +140,10 @@ Every day at **17:00**, the module automatically:
    - Visibility: Not "Not Visible Individually"
    - Not previously posted to Facebook
 5. ✅ **Posts each product** to Facebook with:
-   - 📸 Product image
-   - 📝 Product name and description
-   - 💶 Product price in EUR
-   - 🔗 Direct link to product page
+   - 📸 Product image (configurable)
+   - 📝 Selected custom attributes (name, description, price, URL, etc.)
+   - 🎯 Customizable attribute display with appropriate icons
+   - 🔗 Direct link to product page (always included)
 6. ✅ **Tracks the status** of each post (Published/Failed)
 7. ✅ **Logs all activity** to Magento system logs
 
@@ -161,16 +166,28 @@ The module maintains a `fb_products` table with the following information:
 
 ### Facebook Post Format
 
-Each product is posted with the following format:
+Each product is posted with a customizable format based on selected attributes:
 
 ```
-🆕 [Product Name] 🏠
+🏠 New Properties Available
 
-[Product Description]
+1. [Product Name]
+📝 Description: [Product Description]
+💶 Price: [Price] EUR
+🔗 Details: [Product URL]
 
-💶 Preț: [Price] EUR
-🔗 Vezi detalii: [Product URL]
+2. [Next Product...]
 ```
+
+**Available Attributes with Icons:**
+- 🔗 Product URL (always included)
+- 📝 Description / Short Description
+- 💶 Price / Final Price / Special Price
+- 🏷️ SKU
+- ⚖️ Weight
+- 📅 Created Date
+- 🔄 Updated Date
+- 📋 Custom Attributes (with auto-formatting)
 
 ---
 
@@ -232,6 +249,15 @@ Access the sync history in the admin panel:
 ---
 
 ## 📝 Changelog
+
+### Version 1.1.0
+- **NEW**: Custom Attributes Selection - Choose which product attributes to display in Facebook posts
+- **NEW**: Multiselect configuration for flexible attribute display
+- **NEW**: Automatic attribute formatting (price, date, boolean values)
+- **NEW**: Attribute icons for better visual presentation
+- **IMPROVED**: URL attribute always included by default
+- **IMPROVED**: Better attribute labeling and organization
+- Migration script for existing installations
 
 ### Version 1.0.0
 - Initial release

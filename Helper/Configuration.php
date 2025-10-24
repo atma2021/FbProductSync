@@ -15,7 +15,7 @@ class Configuration extends AbstractHelper
     const FB_PAGE_ID = 'configuration/general/fb_page_id';
     const FB_ACCESS_TOKEN = 'configuration/general/fb_access_token';
     const FB_POST_IMAGE = 'configuration/general/fb_post_image';
-    const FB_PRICE_ATTRIBUTE = 'configuration/general/fb_price_attribute';
+    const FB_CUSTOM_ATTRIBUTES = 'configuration/general/fb_custom_attributes';
 
     public function __construct(
         Context $context,
@@ -86,12 +86,40 @@ class Configuration extends AbstractHelper
     }
 
     /**
-     * Get Facebook Price Attribute Code
+     * Get Facebook Custom Attributes
+     *
+     * @return array
+     */
+    public function getFbCustomAttributes(): array
+    {
+        $attributesString = $this->scopeConfig->getValue(self::FB_CUSTOM_ATTRIBUTES, ScopeInterface::SCOPE_STORE);
+        
+        if (empty($attributesString)) {
+            // Default attributes if none selected
+            return ['name', 'price', 'url'];
+        }
+        
+        return explode(',', $attributesString);
+    }
+
+    /**
+     * Get Facebook Price Attribute Code (backward compatibility)
      *
      * @return string
      */
     public function getFbPriceAttribute(): string
     {
-        return $this->scopeConfig->getValue(self::FB_PRICE_ATTRIBUTE, ScopeInterface::SCOPE_STORE) ?: 'price';
+        $customAttributes = $this->getFbCustomAttributes();
+        
+        // Look for price-related attributes in the selected custom attributes
+        $priceAttributes = ['price', 'final_price', 'special_price'];
+        foreach ($priceAttributes as $priceAttr) {
+            if (in_array($priceAttr, $customAttributes)) {
+                return $priceAttr;
+            }
+        }
+        
+        // Fallback to 'price' if no price attribute is selected
+        return 'price';
     }
 }

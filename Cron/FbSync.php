@@ -112,11 +112,18 @@ class FbSync
             $yesterdayStart = date('Y-m-d 00:00:00', strtotime('-1 day'));
             $yesterdayEnd = date('Y-m-d 23:59:59', strtotime('-1 day'));
 
-            // Get configured price attribute
+            // Get configured custom attributes
+            $customAttributes = $this->configuration->getFbCustomAttributes();
             $priceAttribute = $this->configuration->getFbPriceAttribute();
 
+            // Always include these base attributes
+            $baseAttributes = ['name', 'sku', 'image', 'short_description', 'type_id', 'url_key'];
+            
+            // Add custom attributes to selection
+            $attributesToSelect = array_unique(array_merge($baseAttributes, $customAttributes, [$priceAttribute]));
+
             $collection = $this->productCollectionFactory->create();
-            $collection->addAttributeToSelect(['name', 'sku', 'image', 'short_description', $priceAttribute, 'type_id', 'url_key'])
+            $collection->addAttributeToSelect($attributesToSelect)
                 ->addAttributeToFilter('status', Status::STATUS_ENABLED)
                 ->addAttributeToFilter('visibility', ['neq' => Visibility::VISIBILITY_NOT_VISIBLE])
                 ->addAttributeToFilter('created_at', ['from' => $yesterdayStart, 'to' => $yesterdayEnd])
@@ -154,14 +161,26 @@ class FbSync
                 try {
                     $this->fbProductsRepository->save($fbProduct);
 
-                    $products[] = [
+                    // Collect all custom attribute values
+                    $productData = [
                         'id' => $fbProduct->getId(),
                         'name' => $product->getName(),
                         'sku' => $product->getSku(),
                         'url' => $productUrl,
                         'price' => $priceValue,
                         'description' => $product->getShortDescription() ?: $product->getName(),
+                        'custom_attributes' => []
                     ];
+                    
+                    // Add selected custom attributes
+                    foreach ($customAttributes as $attributeCode) {
+                        $value = $this->getAttributeDisplayValue($product, $attributeCode, $productUrl);
+                        if ($value !== null && $value !== '') {
+                            $productData['custom_attributes'][$attributeCode] = $value;
+                        }
+                    }
+                    
+                    $products[] = $productData;
                 } catch (\Exception $e) {
                     $this->logger->error('Error saving Facebook Product: ' . $e->getMessage());
                 }
@@ -202,11 +221,17 @@ class FbSync
             
             foreach ($products as $index => $product) {
                 $message .= ($index + 1) . ". {$product['name']}\n";
-                if (!empty($product['description'])) {
-                    $message .= $product['description'] . "\n";
+                
+                // Add selected custom attributes
+                foreach ($product['custom_attributes'] as $attributeCode => $value) {
+                    if ($value && $attributeCode !== 'name') { // Skip name as it's already shown
+                        $label = $this->getAttributeLabel($attributeCode);
+                        $icon = $this->getAttributeIcon($attributeCode);
+                        $message .= "{$icon} {$label}: {$value}\n";
+                    }
                 }
-                $message .= "💶 " . __("Price:") . " " . number_format($product['price'], 2) . " EUR\n";
-                $message .= "🔗 " . __("Details") . " " . $product['url'] . "\n\n";
+                
+                $message .= "\n";
             }
             
             $message .= "━━━━━━━━━━━━━━━━━━━";
@@ -272,6 +297,118 @@ class FbSync
             $this->logger->error('Error posting to Facebook: ' . $errorMessage);
             $this->markProductsAsFailed($products, $errorMessage);
             return false;
+        }
+    }
+
+    /**
+     * Get attribute label for display
+     *
+     * @param string $attributeCode
+     * @return string
+     */
+    protected function getAttributeLabel($attributeCode)
+    {
+        $labels = [
+            'url' => __('Details'),
+            'description' => __('Description'),
+            'short_description' => __('Description'),
+            'price' => __('Price'),
+            'final_price' => __('Final Price'),
+            'special_price' => __('Special Price'),
+            'sku' => __('SKU'),
+            'weight' => __('Weight'),
+            'created_at' => __('Created'),
+            'updated_at' => __('Updated')
+        ];
+        
+        return $labels[$attributeCode] ?? ucfirst(str_replace('_', ' ', $attributeCode));
+    }
+
+    /**
+     * Get attribute icon for display
+     *
+     * @param string $attributeCode
+     * @return string
+     */
+    protected function getAttributeIcon($attributeCode)
+    {
+        $icons = [
+            'url' => '🔗',
+            'description' => '📝',
+            'short_description' => '📝',
+            'price' => '💶',
+            'final_price' => '💶',
+            'special_price' => '💸',
+            'sku' => '🏷️',
+            'weight' => '⚖️',
+            'created_at' => '📅',
+            'updated_at' => '🔄'
+        ];
+        
+        return $icons[$attributeCode] ?? '📋';
+    }
+
+    /**
+     * Get attribute display value for Facebook post
+     *
+     * @param \Magento\Catalog\Model\Product $product
+     * @param string $attributeCode
+     * @param string $productUrl
+     * @return string|null
+     */
+    protected function getAttributeDisplayValue($product, $attributeCode, $productUrl)
+    {
+        switch ($attributeCode) {
+            case 'url':
+                return $productUrl;
+            case 'name':
+                return $product->getName();
+            case 'description':
+                return $product->getDescription() ?: $product->getShortDescription();
+            case 'short_description':
+                return $product->getShortDescription();
+            case 'price':
+            case 'final_price':
+            case 'special_price':
+                $value = $product->getData($attributeCode);
+                if ($value) {
+                    return number_format((float)$value, 2) . ' EUR';
+                }
+                return null;
+            case 'sku':
+                return $product->getSku();
+            case 'weight':
+                $value = $product->getWeight();
+                return $value ? $value . ' kg' : null;
+            case 'created_at':
+            case 'updated_at':
+                $value = $product->getData($attributeCode);
+                if ($value) {
+                    return date('Y-m-d', strtotime($value));
+                }
+                return null;
+            default:
+                // Handle custom attributes
+                $attribute = $product->getResource()->getAttribute($attributeCode);
+                if ($attribute) {
+                    $value = $product->getAttributeText($attributeCode);
+                    if (!$value) {
+                        $value = $product->getData($attributeCode);
+                    }
+                    
+                    // Format boolean values
+                    if ($attribute->getFrontendInput() === 'boolean') {
+                        return $value ? __('Yes') : __('No');
+                    }
+                    
+                    // Format date values
+                    if ($attribute->getFrontendInput() === 'date' && $value) {
+                        return date('Y-m-d', strtotime($value));
+                    }
+                    
+                    return $value;
+                }
+                return null;
         }
     }
 
