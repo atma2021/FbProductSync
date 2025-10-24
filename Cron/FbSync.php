@@ -100,14 +100,13 @@ class FbSync
     protected function getLatestProducts()
     {
         try {
-            // Get already successfully posted product SKUs (published status only)
-            $postedSkus = [];
-            $postedCollection = $this->fbProductsRepository->getCollection()
-                ->addStatusFilter(FbProducts::STATUS_PUBLISHED)
+            // Get already processed product SKUs (any status to prevent duplicates)
+            $processedSkus = [];
+            $processedCollection = $this->fbProductsRepository->getCollection()
                 ->addFieldToSelect('sku');
 
-            foreach ($postedCollection as $item) {
-                $postedSkus[] = $item->getSku();
+            foreach ($processedCollection as $item) {
+                $processedSkus[] = $item->getSku();
             }
 
             // Get yesterday's date range (from midnight to 23:59:59)
@@ -131,9 +130,9 @@ class FbSync
                 ->addAttributeToFilter('created_at', ['from' => $yesterdayStart, 'to' => $yesterdayEnd])
                 ->addUrlRewrite();
 
-            // Exclude already posted products
-            if (!empty($postedSkus)) {
-                $collection->addFieldToFilter('sku', ['nin' => $postedSkus]);
+            // Exclude already processed products (any status)
+            if (!empty($processedSkus)) {
+                $collection->addFieldToFilter('sku', ['nin' => $processedSkus]);
             }
 
             $collection->setOrder('created_at', 'DESC');
@@ -148,6 +147,16 @@ class FbSync
                 $priceValue = $product->getData($priceAttribute);
                 if (!$priceValue) {
                     $priceValue = $product->getFinalPrice();
+                }
+
+                // Double-check if SKU already exists (safety check)
+                $existingProduct = $this->fbProductsRepository->getCollection()
+                    ->addFieldToFilter('sku', $product->getSku())
+                    ->getFirstItem();
+
+                if ($existingProduct->getId()) {
+                    $this->logger->info('Facebook Sync: SKU already exists, skipping: ' . $product->getSku());
+                    continue;
                 }
 
                 // Create Facebook Product entry
@@ -184,7 +193,13 @@ class FbSync
                     
                     $products[] = $productData;
                 } catch (\Exception $e) {
-                    $this->logger->error('Error saving Facebook Product: ' . $e->getMessage());
+                    // Check if it's a duplicate key error
+                    if (strpos($e->getMessage(), 'Duplicate entry') !== false || 
+                        strpos($e->getMessage(), 'UNIQUE constraint') !== false) {
+                        $this->logger->warning('Facebook Sync: Duplicate SKU detected during save, skipping: ' . $product->getSku());
+                    } else {
+                        $this->logger->error('Error saving Facebook Product: ' . $e->getMessage());
+                    }
                 }
             }
 
@@ -384,7 +399,7 @@ class FbSync
     }
 
     /**
-     * Format price value with currency
+     * Format price value with configured currency
      *
      * @param float $price
      * @return string|null
@@ -396,16 +411,58 @@ class FbSync
         }
         
         try {
-            // Get current store currency
-            $store = $this->storeManager->getStore();
-            $currencyCode = $store->getCurrentCurrencyCode();
+            // Get configured currency for Facebook posts
+            $configuredCurrency = $this->configuration->getFbCurrency();
             
-            // Format price with Magento's pricing helper
-            return $this->pricingHelper->currency($price, true, false);
+            if ($configuredCurrency === 'store') {
+                // Use store currency with Magento's pricing helper
+                return $this->pricingHelper->currency($price, true, false);
+            } else {
+                // Use configured currency with simple formatting
+                return $this->formatPriceWithCurrency($price, $configuredCurrency);
+            }
         } catch (\Exception $e) {
             // Fallback to simple formatting
             $this->logger->debug('Could not format price with currency: ' . $e->getMessage());
             return number_format((float)$price, 2) . ' EUR';
+        }
+    }
+
+    /**
+     * Format price with specific currency
+     *
+     * @param float $price
+     * @param string $currencyCode
+     * @return string
+     */
+    protected function formatPriceWithCurrency($price, $currencyCode)
+    {
+        $currencySymbols = [
+            'EUR' => '€',
+            'USD' => '$',
+            'GBP' => '£',
+            'RON' => 'RON',
+            'CAD' => 'CAD',
+            'AUD' => 'AUD',
+            'JPY' => '¥',
+            'CHF' => 'CHF',
+            'SEK' => 'SEK',
+            'NOK' => 'NOK',
+            'DKK' => 'DKK',
+            'PLN' => 'PLN',
+            'CZK' => 'CZK',
+            'HUF' => 'HUF',
+            'BGN' => 'BGN'
+        ];
+
+        $symbol = $currencySymbols[$currencyCode] ?? $currencyCode;
+        $formattedPrice = number_format((float)$price, 2);
+
+        // Position symbol based on currency
+        if (in_array($currencyCode, ['USD', 'GBP'])) {
+            return $symbol . $formattedPrice;
+        } else {
+            return $formattedPrice . ' ' . $symbol;
         }
     }
 

@@ -22,6 +22,9 @@
         <constraint xsi:type="unique" referenceId="FACEBOOK_POST_ID">
             <column name="facebook_post_id"/>
         </constraint>
+        <constraint xsi:type="unique" referenceId="ATMA_FB_PRODUCTS_SKU_UNIQUE">
+            <column name="sku"/>
+        </constraint>
         <index referenceId="IDX_ATMA_FB_PRODUCTS_SKU" indexType="btree">
             <column name="sku"/>
         </index>

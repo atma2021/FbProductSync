@@ -39,6 +39,12 @@
                     <comment>Select which product attributes to display in Facebook posts. URL is automatically included and recommended.</comment>
                     <can_be_empty>0</can_be_empty>
                 </field>
+                <field id="fb_currency" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Facebook Post Currency</label>
+                    <source_model>Atma\FacebookSync\Model\Config\Source\Currency</source_model>
+                    <comment>Select which currency to use for all price attributes in Facebook posts. Choose "Use Store Currency" to automatically use the store's configured currency.</comment>
+                    <validate>required-entry</validate>
+                </field>
             </group>
         </section>
     </system>

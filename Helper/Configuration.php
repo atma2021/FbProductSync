@@ -16,6 +16,7 @@ class Configuration extends AbstractHelper
     const FB_ACCESS_TOKEN = 'configuration/general/fb_access_token';
     const FB_POST_IMAGE = 'configuration/general/fb_post_image';
     const FB_CUSTOM_ATTRIBUTES = 'configuration/general/fb_custom_attributes';
+    const FB_CURRENCY = 'configuration/general/fb_currency';
 
     public function __construct(
         Context $context,
@@ -121,5 +122,15 @@ class Configuration extends AbstractHelper
         
         // Fallback to 'price' if no price attribute is selected
         return 'price';
+    }
+
+    /**
+     * Get Facebook Post Currency
+     *
+     * @return string
+     */
+    public function getFbCurrency(): string
+    {
+        return $this->scopeConfig->getValue(self::FB_CURRENCY, ScopeInterface::SCOPE_STORE) ?: 'store';
     }
 }
