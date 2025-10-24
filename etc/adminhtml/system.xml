@@ -45,6 +45,11 @@
                     <comment>Select which currency to use for all price attributes in Facebook posts. Choose "Use Store Currency" to automatically use the store's configured currency.</comment>
                     <validate>required-entry</validate>
                 </field>
+                <field id="fb_attribute_label_mapping" translate="label" type="textarea" sortOrder="80" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Attribute Label Mapping</label>
+                    <comment><![CDATA[Map English attribute names to custom labels for Facebook posts. Format: one mapping per line as "english_name|custom_label"<br/>Example:<br/>address_area|Zonă/Cartier<br/>address_locality|Localitate<br/>address_county|Județ]]></comment>
+                    <backend_model>Atma\FacebookSync\Model\Config\Backend\AttributeLabelMapping</backend_model>
+                </field>
             </group>
         </section>
     </system>

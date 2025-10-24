@@ -325,6 +325,12 @@ class FbSync
      */
     protected function getAttributeLabel($attributeCode)
     {
+        // Check for custom mapping first
+        $customMappings = $this->configuration->getFbAttributeLabelMapping();
+        if (isset($customMappings[$attributeCode])) {
+            return $customMappings[$attributeCode];
+        }
+        
         // Predefined translatable labels for special attributes
         $labels = [
             'url' => __('Details'),

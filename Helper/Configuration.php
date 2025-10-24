@@ -17,6 +17,7 @@ class Configuration extends AbstractHelper
     const FB_POST_IMAGE = 'configuration/general/fb_post_image';
     const FB_CUSTOM_ATTRIBUTES = 'configuration/general/fb_custom_attributes';
     const FB_CURRENCY = 'configuration/general/fb_currency';
+    const FB_ATTRIBUTE_LABEL_MAPPING = 'configuration/general/fb_attribute_label_mapping';
 
     public function __construct(
         Context $context,
@@ -132,5 +133,22 @@ class Configuration extends AbstractHelper
     public function getFbCurrency(): string
     {
         return $this->scopeConfig->getValue(self::FB_CURRENCY, ScopeInterface::SCOPE_STORE) ?: 'store';
+    }
+
+    /**
+     * Get Attribute Label Mapping
+     *
+     * @return array
+     */
+    public function getFbAttributeLabelMapping(): array
+    {
+        $mappingJson = $this->scopeConfig->getValue(self::FB_ATTRIBUTE_LABEL_MAPPING, ScopeInterface::SCOPE_STORE);
+        
+        if (empty($mappingJson)) {
+            return [];
+        }
+        
+        $mappings = json_decode($mappingJson, true);
+        return is_array($mappings) ? $mappings : [];
     }
 }

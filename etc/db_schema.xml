@@ -19,12 +19,12 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
-        <constraint xsi:type="unique" referenceId="FACEBOOK_POST_ID">
-            <column name="facebook_post_id"/>
-        </constraint>
         <constraint xsi:type="unique" referenceId="UNQ_ATMA_FB_PRODUCTS_SKU">
             <column name="sku"/>
         </constraint>
+        <index referenceId="IDX_ATMA_FB_PRODUCTS_FACEBOOK_POST_ID" indexType="btree">
+            <column name="facebook_post_id"/>
+        </index>
         <index referenceId="IDX_ATMA_FB_PRODUCTS_STATUS" indexType="btree">
             <column name="status"/>
         </index>
